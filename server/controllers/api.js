@@ -4,8 +4,16 @@ const sequelize = require('../db/db.js').sequelize;
 const province_code = require('../assets/province.js').province;
 
 function getLocalTime(nS) {
-    return new Date(parseInt(nS)).toLocaleString().replace(/:\d{1,2}$/,' ').split(" ")[0];
+    let date =  (new Date(parseInt(nS)).toLocaleString().split(',')[0].split('/').reverse());
+	for (let i in date) {
+		if (date[i].length == 1) {
+			date[i] = "0" + date[i];
+		}
+	}
+	return date.join("-");
 }
+
+
 
 module.exports = [
 	{
