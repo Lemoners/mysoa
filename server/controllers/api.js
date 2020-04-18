@@ -6,17 +6,18 @@ const province_code = require('../assets/province.js').province;
 module.exports = [
 	{
 		method: 'GET',
-		path: '/api/record/area/:name',
+		path: '/api/record/country/:name',
 		func: async (ctx, next) => {
 			let name = ctx.params.name || 'NONE';
 			let records = await model.Record.findAll({
+				attributes: { exclude: ['id'] },
 				where: {
-					name: name
+					country: name
 				}
 			});
 			// console.log(records);
 			if (records.length === 0) {
-				throw new APIError('404', 'Requested area not found');
+				throw new APIError('404', 'Requested country not found');
 			} else {
 				ctx.rest(records);
 			}
@@ -25,24 +26,122 @@ module.exports = [
 		method: 'GET',
 		path: '/api/record/latest',
 		func: async (ctx, next) => {
-			let records = await sequelize.query('select name, updateTime, currentConfirmedCount, suspectedCount, curedCount, deadCount from Record, (select name as tn, max(updateTime) as tm from Record group by name) as t where Record.name = t.tn and Record.updateTime = t.tm order by name;');
-			if (records[0].length === 0) {
+			
+			var records = {};
+
+			let coun_records = await sequelize.query('select country, updateTime, confirmed, deaths, recovered from Record, (select country as tc, max(updateTime) as tm from Record where province="" group by country) as t where Record.country = t.tc and Record.updateTime = t.tm order by country;');
+
+			for (var i of coun_records[0]) {
+				records[i.country] = {
+					province: {},
+					updateTime: i.updateTime,
+					confirmed: i.confirmed,
+					deaths: i.deaths,
+					recovered: i.recovered
+				}
+			}
+			
+			let coun_prov_records = await sequelize.query('select country, province, updateTime, confirmed, deaths, recovered from Record, (select province as tp, max(updateTime) as tm from Record where province!="" group by province) as t where Record.province = tp and Record.updateTime = t.tm order by country;');
+
+			for (var i of coun_prov_records[0]) {
+				if (i.country in records) {
+					records[i.country].confirmed += i.confirmed;
+					records[i.country].deaths += i.deaths;
+					records[i.country].recovered += i.recovered;
+					records[i.country].province[i.province] = {
+						confirmed: i.confirmed,
+						deaths: i.deaths,
+						recovered: i.recovered
+					};
+				} else {
+					records[i.country] = {};
+					records[i.country].confirmed = i.confirmed;
+					records[i.country].deaths = i.deaths;
+					records[i.country].recovered = i.recovered;
+					records[i.country].province = {};
+					records[i.country].province[i.province] = {
+						confirmed: i.confirmed,
+						deaths: i.deaths,
+						recovered: i.recovered
+					};
+				}
+			}
+
+
+			if (Object.getOwnPropertyNames(records).length === 0) {
 				throw new APIError('404', 'Latest data is empty');
 			} else {
-				ctx.rest(records[0]);
+				ctx.rest(records);
 			}
 		}
 	},{
 		method: 'GET',
 		path: '/api/record/all',
 		func: async (ctx, next) => {
-			let records = await model.Record.findAll({
+			let records = {};
+			let coun_records = await model.Record.findAll({
+				attributes: { exclude: ['id'] },
 				order: [
 					['updateTime', 'DESC']
 				]
 			});
+
+			for (var i of coun_records) {
+				if (i.country in records) {
+					if (!(i.province === "")) {
+						if (i.updateTime in records[i.country].timeline) {
+							records[i.country].timeline[i.updateTime].confirmed += i.confirmed;
+							records[i.country].timeline[i.updateTime].deaths += i.deaths;
+							records[i.country].timeline[i.updateTime].recovered += i.recovered;
+						} else {
+							records[i.country].timeline[i.updateTime] = {};
+							records[i.country].timeline[i.updateTime].confirmed = i.confirmed;
+							records[i.country].timeline[i.updateTime].deaths = i.deaths;
+							records[i.country].timeline[i.updateTime].recovered = i.recovered;
+						}
+						if (!(i.province in records[i.country].province)) {
+							records[i.country].province[i.province] = {};
+						}
+						records[i.country].province[i.province][i.updateTime] = {
+							confirmed: i.confirmed,
+							deaths: i.deaths,
+							recovered: i.recovered
+						};
+					} else {
+						records[i.country].timeline[i.updateTime] = {
+							confirmed: i.confirmed,
+							deaths: i.deaths,
+							recovered: i.recovered
+						};
+
+					}
+
+
+				} else {
+					records[i.country] = {};
+					records[i.country].timeline = {};
+					records[i.country].province = {};
+					// console.log(i);
+					// console.log(!(i.province === ""));
+					if (!(i.province === "")) {
+						records[i.country].province[i.province] = {};
+						records[i.country].province[i.province][i.updateTime] = {
+							confirmed: i.confirmed,
+							deaths: i.deaths,
+							recovered: i.recovered
+						};
+					}
+
+					records[i.country].timeline[i.updateTime] = {
+						confirmed: i.confirmed,
+						deaths: i.deaths,
+						recovered: i.recovered
+					};
+				}
+			}
+
 			// console.log(records);
-			if (records.length === 0) {
+			if (Object.getOwnPropertyNames(records).length === 0) {
 				throw new APIError('404', 'Requested record not found');
 			} else {
 				ctx.rest(records);

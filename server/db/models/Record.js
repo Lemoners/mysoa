@@ -8,18 +8,18 @@ const generateId = (name) => {
 // except name, other remain untouched
 module.exports = db.defineModel('Record', {
     id: { type: Sequelize.STRING(100), primaryKey: true },
-    name: Sequelize.STRING(100),
-    updateTime: Sequelize.STRING(100),
-    currentConfirmedCount: Sequelize.INTEGER,
-    suspectedCount: Sequelize.INTEGER,
-    curedCount: Sequelize.INTEGER,
-    deadCount: Sequelize.INTEGER
+    country: Sequelize.STRING(50),
+    province: Sequelize.STRING(50),
+    updateTime: Sequelize.STRING(30),
+    confirmed: Sequelize.INTEGER,
+    deaths: Sequelize.INTEGER,
+    recovered: Sequelize.INTEGER,
 }, {
     hooks: {
             beforeValidate: function (obj) {
                 if (obj.isNewRecord) {
                     if (!obj.id) {
-                        obj.id = generateId(obj.name + obj.updateTime);
+                        obj.id = generateId(obj.country + obj.province + obj.updateTime);
                     }
                 }
             }

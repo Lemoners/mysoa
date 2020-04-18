@@ -12,6 +12,7 @@ module.exports = {
 					ctx.response.type = 'application/json';
 					ctx.response.body = data;
 				};
+				
 				try {
 					await next();
 				} catch (e) {
@@ -23,6 +24,8 @@ module.exports = {
 						message: e.message || ''
 					};
 				}
+				//FOR DEBUG:
+				// await next();
 			} else {
 				await next();
 			}

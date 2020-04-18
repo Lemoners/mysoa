@@ -17,6 +17,9 @@ function loadModels(dir) {
 module.exports.sync = () => {
     db.sync();
 };
+module.exports.forceSync = () => {
+    db.forceSync();
+};
 module.exports.loadModels = loadModels;
 
 

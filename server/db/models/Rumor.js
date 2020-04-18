@@ -12,6 +12,7 @@ module.exports = db.defineModel('Rumor', {
     title: Sequelize.STRING(100),
     mainSummary: Sequelize.STRING(100),
     body: Sequelize.STRING(500),
+    rumorType: Sequelize.INTEGER,
 }, {
     hooks: {
             beforeValidate: function (obj) {
