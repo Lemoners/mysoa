@@ -12,7 +12,7 @@ var initbaidu = async () => {
 	// model.sync()
 
 	// var data = await fs.readFile(__dirname + '/data/clean_data.json');
-	var data = await fs.readFile(__dirname + '/data/clean_data/BaiduIndex/data_baidu.json');
+	var data = await fs.readFile(__dirname + '/data/clean_data/data_baidu.json');
 
 	data = JSON.parse(data);
 
@@ -219,19 +219,6 @@ var initrecord = async () => {
 };
 
 
-// (async()=>{
-//     model.loadModels();
-//     // init table
-//     await model.sync();
-
-//     await initrecord();
-
-// })().then((result) => {
-//     console.log("ok", result);
-// }).catch((err) => {
-//     console.log("fail", err);
-// })
-
 
 (async()=>{
     model.loadModels();
@@ -243,8 +230,8 @@ var initrecord = async () => {
     await initrecord();
     await initbaidu();
 
-})().then((result) => {
-    console.log("ok", result);
+})().then(() => {
+    console.log("ok");
 }).catch((err) => {
     console.log("fail", err);
 })

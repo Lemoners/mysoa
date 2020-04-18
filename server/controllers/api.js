@@ -28,7 +28,6 @@ module.exports = [
 		func: async (ctx, next) => {
 			
 			var records = {};
-
 			let coun_records = await sequelize.query('select country, updateTime, confirmed, deaths, recovered from Record, (select country as tc, max(updateTime) as tm from Record where province="" group by country) as t where Record.country = t.tc and Record.updateTime = t.tm order by country;');
 
 			for (var i of coun_records[0]) {
@@ -66,8 +65,6 @@ module.exports = [
 					};
 				}
 			}
-
-
 			if (Object.getOwnPropertyNames(records).length === 0) {
 				throw new APIError('404', 'Latest data is empty');
 			} else {
@@ -87,57 +84,44 @@ module.exports = [
 			});
 
 			for (var i of coun_records) {
-				if (i.country in records) {
-					if (!(i.province === "")) {
-						if (i.updateTime in records[i.country].timeline) {
-							records[i.country].timeline[i.updateTime].confirmed += i.confirmed;
-							records[i.country].timeline[i.updateTime].deaths += i.deaths;
-							records[i.country].timeline[i.updateTime].recovered += i.recovered;
-						} else {
-							records[i.country].timeline[i.updateTime] = {};
-							records[i.country].timeline[i.updateTime].confirmed = i.confirmed;
-							records[i.country].timeline[i.updateTime].deaths = i.deaths;
-							records[i.country].timeline[i.updateTime].recovered = i.recovered;
-						}
-						if (!(i.province in records[i.country].province)) {
-							records[i.country].province[i.province] = {};
-						}
-						records[i.country].province[i.province][i.updateTime] = {
+				if (!(i.updateTime in records)) {
+					records[i.updateTime] = {};
+				}
+
+				if (!(i.province === "")) {
+					if (i.country in records[i.updateTime]) {
+						records[i.updateTime][i.country].province[i.province] = {
 							confirmed: i.confirmed,
 							deaths: i.deaths,
 							recovered: i.recovered
 						};
+						records[i.updateTime][i.country].confirmed += i.confirmed;
+						records[i.updateTime][i.country].deaths += i.deaths;
+						records[i.updateTime][i.country].recovered += i.recovered;
+
 					} else {
-						records[i.country].timeline[i.updateTime] = {
+						records[i.updateTime][i.country] = {
 							confirmed: i.confirmed,
 							deaths: i.deaths,
 							recovered: i.recovered
 						};
-
+						records[i.updateTime][i.country].province = {};
+						records[i.updateTime][i.country].province[i.province] = {
+							confirmed: i.confirmed,
+							deaths: i.deaths,
+							recovered: i.recovered
+						}
 					}
-
 
 				} else {
-					records[i.country] = {};
-					records[i.country].timeline = {};
-					records[i.country].province = {};
-					// console.log(i);
-					// console.log(!(i.province === ""));
-					if (!(i.province === "")) {
-						records[i.country].province[i.province] = {};
-						records[i.country].province[i.province][i.updateTime] = {
-							confirmed: i.confirmed,
-							deaths: i.deaths,
-							recovered: i.recovered
-						};
-					}
-
-					records[i.country].timeline[i.updateTime] = {
+					records[i.updateTime][i.country] = {
+						province: {},
 						confirmed: i.confirmed,
 						deaths: i.deaths,
 						recovered: i.recovered
 					};
 				}
+				
 			}
 
 			// console.log(records);
