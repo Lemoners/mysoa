@@ -3,6 +3,10 @@ const model = require('../db/model.js');
 const sequelize = require('../db/db.js').sequelize;
 const province_code = require('../assets/province.js').province;
 
+function getLocalTime(nS) {
+    return new Date(parseInt(nS)).toLocaleString().replace(/:\d{1,2}$/,' ').split(" ")[0];
+}
+
 module.exports = [
 	{
 		method: 'GET',
@@ -171,12 +175,13 @@ module.exports = [
 		func: async (ctx, next) => {
 			let news = {};
 			let t_news = await sequelize.query('select pubDate, sourceUrl, title, summary from `News` order by pubDate');
-
+		
 			for (var i of t_news[0]) {
-				if (!(i.pubDate in news)) {
-					news[i.pubDate] = [];
+				let p_date = getLocalTime(i.pubDate);
+				if (!(p_date in news)) {
+					news[p_date] = [];
 				}
-				news[i.pubDate].push({
+				news[p_date].push({
 					sourceUrl: i.sourceUrl,
 					title: i.title,
 					summary: i.summary
