@@ -1,9 +1,9 @@
 const Sequelize = require('sequelize');
 
-const config = require('./config.js').config;
+// const config = require('./config.js').config;
 
-// console.warn("Using remote db");
-// const config = require('./config.js').remoteconfig;
+console.warn("Using remote db");
+const config = require('./config.js').remoteconfig;
 
 var sequelize = new Sequelize(config.database, config.username, config.password, {
         host: config.host,
