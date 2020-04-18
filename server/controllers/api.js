@@ -6,7 +6,7 @@ const province_code = require('../assets/province.js').province;
 module.exports = [
 	{
 		method: 'GET',
-		path: '/api/record/country/:name',
+		path: '/api/record/country/name/:name',
 		func: async (ctx, next) => {
 			let name = ctx.params.name || 'NONE';
 			let records = await model.Record.findAll({
@@ -73,55 +73,22 @@ module.exports = [
 		}
 	},{
 		method: 'GET',
-		path: '/api/record/all',
+		path: '/api/record/country/all',
 		func: async (ctx, next) => {
-			let records = {};
-			let coun_records = await model.Record.findAll({
-				attributes: { exclude: ['id'] },
-				order: [
-					['updateTime', 'DESC']
-				]
-			});
 
-			for (var i of coun_records) {
+			let records = {};
+			let coun_records = await sequelize.query('select country, updateTime ,sum(confirmed) as confirmed, sum(deaths) as deaths, sum(recovered) as recovered from `Record` group by country, updateTime order by updateTime, country;')
+
+			for (var i of coun_records[0]) {
 				if (!(i.updateTime in records)) {
 					records[i.updateTime] = {};
 				}
 
-				if (!(i.province === "")) {
-					if (i.country in records[i.updateTime]) {
-						records[i.updateTime][i.country].province[i.province] = {
-							confirmed: i.confirmed,
-							deaths: i.deaths,
-							recovered: i.recovered
-						};
-						records[i.updateTime][i.country].confirmed += i.confirmed;
-						records[i.updateTime][i.country].deaths += i.deaths;
-						records[i.updateTime][i.country].recovered += i.recovered;
-
-					} else {
-						records[i.updateTime][i.country] = {
-							confirmed: i.confirmed,
-							deaths: i.deaths,
-							recovered: i.recovered
-						};
-						records[i.updateTime][i.country].province = {};
-						records[i.updateTime][i.country].province[i.province] = {
-							confirmed: i.confirmed,
-							deaths: i.deaths,
-							recovered: i.recovered
-						}
-					}
-
-				} else {
-					records[i.updateTime][i.country] = {
-						province: {},
-						confirmed: i.confirmed,
-						deaths: i.deaths,
-						recovered: i.recovered
-					};
-				}
-				
+				records[i.updateTime][i.country] = {
+					confirmed: i.confirmed,
+					deaths: i.deaths,
+					recovered: i.recovered
+				};
 			}
 
 			// console.log(records);
@@ -131,6 +98,33 @@ module.exports = [
 				ctx.rest(records);
 			}
 		}
+	},{
+		method: 'GET',
+		path: '/api/record/province/all',
+		func: async (ctx, next) => {
+			let records = {};
+			let pro_records = await sequelize.query('select province, updateTime, confirmed, deaths, recovered from `Record` where province!="" and country="China" order by updateTime, province');
+
+			for (var i of pro_records[0]) {
+				if (!(i.updateTime in records)) {
+					records[i.updateTime] = {};
+				}
+
+				records[i.updateTime][i.province] = {
+					confirmed: i.confirmed,
+					deaths: i.deaths,
+					recovered: i.recovered
+				};
+			}
+
+			if (Object.getOwnPropertyNames(records).length === 0) {
+				throw new APIError('404', 'Requested province not found');
+			} else {
+				ctx.rest(records);
+			}
+
+		}
+
 	},{
 		method: 'GET',
 		path: '/api/record/time/:time',
@@ -175,12 +169,21 @@ module.exports = [
 		method: 'GET',
 		path: '/api/news/all',
 		func: async (ctx, next) => {
-			let news = await model.News.findAll({
-				order: [
-					['pubDate', 'DESC'],
-				]
-			});
-			if (news.length === 0) {
+			let news = {};
+			let t_news = await sequelize.query('select pubDate, sourceUrl, title, summary from `News` order by pubDate');
+
+			for (var i of t_news[0]) {
+				if (!(i.pubDate in news)) {
+					news[i.pubDate] = [];
+				}
+				news[i.pubDate].push({
+					sourceUrl: i.sourceUrl,
+					title: i.title,
+					summary: i.summary
+				});
+			}
+
+			if (Object.getOwnPropertyNames(news).length === 0) {
 				throw new APIError('404', 'Cannot find any news');
 			} else {
 				ctx.rest(news);
