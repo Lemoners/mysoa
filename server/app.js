@@ -8,6 +8,10 @@ const model = require('./db/model.js');
 const serve = require('koa-static');
 const historyApiFallback = require('koa-history-api-fallback');
 
+
+const logger = require('./logger.js').logger;
+
+
 app.use(async (ctx, next) => {
 	// log url
 	console.log(`Process ${ctx.request.method} ${ctx.request.url}...`);
@@ -16,6 +20,8 @@ app.use(async (ctx, next) => {
 	console.log(`Process at ${start}`);
 	await next();
 });
+
+app.use(logger);
 
 
 // for post
