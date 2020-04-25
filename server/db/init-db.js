@@ -4,7 +4,10 @@ const generateId = (name) => {
 };
 const fs = require('mz/fs');
 const axios = require('axios');
-const countries = require('./data/clean_data/countries.js').countries;
+const countries = require('../assets/countries').countries;
+const hp2countries = require('../assets/hp_contries2countries').hp_country2country;
+const redis = require('./db.js').redis;
+
 
 var initbaidu = async () => {
 	// model.loadModels();
@@ -150,14 +153,23 @@ var initrecord = async () => {
 	data = JSON.parse(data);
 
 	// for (var d of data.locations) {
-	//     if (!d.country in countries) {
-	//         console.log("Coun:", d.country);
-	//     }
-
+	// 	if (!(d.country in countries)) {
+	// 		console.log("Coun:", d.country);
+	// 	}
 	// }
+
+
 	for (var d of data.locations) {
 		let country = d.country,
 			province = d.province;
+		
+		if(!(country in countries)) {
+			if (country in hp2countries) {
+				country = hp2countries[country];
+			} else {
+				continue;
+			}
+		} 
 
 		let confirmed_timeline = d.timelines.confirmed.timeline;
 		let confirmed = {};
@@ -219,8 +231,20 @@ var initrecord = async () => {
 };
 
 
+test_init_redis = async () => {
+	let k = "test";
+	let v = "hh";
+	let res = await redis.set(k,v);
 
-(async()=>{
+	console.log(`SET WITH ${res}`);
+
+	let get = await redis.get("q");
+
+	console.log(`get with ${get}`);
+};
+
+
+(async ()=>{
     model.loadModels();
     // init table
     await model.sync();
@@ -228,10 +252,12 @@ var initrecord = async () => {
     await initrumors();
     await initnews();
     await initrecord();
-    await initbaidu();
+	await initbaidu();
+	
+	// await test_init_redis();
 
-})().then(() => {
-    console.log("ok");
+})().then((res) => {
+	console.log("ok");
 }).catch((err) => {
-    console.log("fail", err);
+	console.log("fail", err);
 })

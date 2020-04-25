@@ -3,7 +3,12 @@ const Sequelize = require('sequelize');
 // const config = require('./config.js').config;
 
 console.warn("Using remote db");
+const redisconfig = require('./config.js').redisconfig;
 const config = require('./config.js').remoteconfig;
+
+const Redis = require('ioredis');
+const redis = new Redis(redisconfig);
+
 
 var sequelize = new Sequelize(config.database, config.username, config.password, {
         host: config.host,
@@ -43,5 +48,6 @@ module.exports = {
         // Warning, this will delete original table
         console.warn("SYNC WILL DELETE ORIGINAL TABLE NOW: at db.js")
         sequelize.sync({ force: true });
-    }
+    },
+    redis: redis,
 }

@@ -17,12 +17,17 @@ app.use(async (ctx, next) => {
 	console.log(`Process ${ctx.request.method} ${ctx.request.url}...`);
 	// log date
 	const start = new Date().toLocaleTimeString();
+
+	const start_time = new Date().getTime();
+
 	console.log(`Process at ${start}`);
 	await next();
+
+	const end_time = new Date().getTime();
+	console.log("Consumption ", (end_time - start_time) / 1000 , `s for ${ctx.request.url}`);
 });
 
 app.use(logger);
-
 
 // for post
 app.use(bodyparser());
