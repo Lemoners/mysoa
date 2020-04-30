@@ -15,7 +15,7 @@
     "echarts": "^4.6.0",
     "echarts-gl": "^1.1.1",
     "ioredis": "^4.16.3",
-    "jquery": "^3.4.1",
+    "jquery": "^3.5.0",
     "jsonp": "^0.2.1",
     "koa": "^2.11.0",
     "koa-bodyparser": "^4.3.0",
