@@ -219,12 +219,20 @@ module.exports = [
 		method: 'GET',
 		path: '/api/news/all',
 		func: async (ctx, next) => {
+			// let start_time = new Date().getTime();
 			let key = "na" + getCurrentTime();
+			// let get_time = new Date().getTime();
 			let result = await redis.get(key);
+			// let get_end_time = new Date().getTime();
+			// console.log("Get spend ", (get_end_time - get_time) / 1000, "s");
+
 			let news = {};
 
 			if (result) {
+				// let parse_time = new Date().getTime();
 				news = JSON.parse(result);
+				// let parse_end_time = new Date().getTime();
+				// console.log("Parse spend ", (parse_end_time - parse_time) / 1000, "s");
 			} else {
 				let t_news = await sequelize.query('select pubDate, sourceUrl, title from `News` order by pubDate');
 		
@@ -245,8 +253,14 @@ module.exports = [
 			if (Object.getOwnPropertyNames(news).length === 0) {
 				throw new APIError('404', 'Cannot find any news');
 			} else {
+				// let rest_start = new Date().getTime();
 				ctx.rest(news);
+				// let rest_end = new Date().getTime();
+				// console.log("Rest spend ", (rest_end - rest_start) / 1000, "s");
 			}
+			let end_time = new Date().getTime();
+
+			// console.log("news spend ", (end_time - start_time) / 1000, "s");
 		}
 	},{
 		method: 'GET',
