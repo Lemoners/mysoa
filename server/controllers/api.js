@@ -3,6 +3,7 @@ const model = require('../db/model.js');
 const sequelize = require('../db/db.js').sequelize;
 const redis = require('../db/db.js').redis;
 const province_code = require('../assets/province.js').province;
+const province_en2chi = require('../assets/province_eng2chi.js');
 
 
 function getLocalTime(nS) {
@@ -28,7 +29,7 @@ function getCurrentTime() {
 }
 
 
-module.exports = [
+let methods = [
 	{
 		method: 'GET',
 		path: '/api/record/country/name/:name',
@@ -57,7 +58,7 @@ module.exports = [
 			var records = {};
 
 			if (result) {
-				result = JSON.parse(result);
+				records = JSON.parse(result);
 			} else {
 				let coun_records = await sequelize.query('select country, updateTime, confirmed, deaths, recovered from Record, (select country as tc, max(updateTime) as tm from Record where province="" group by country) as t where Record.country = t.tc and Record.updateTime = t.tm order by country;');
 
@@ -114,6 +115,12 @@ module.exports = [
 		func: async (ctx, next) => {
 			// Record + Country + All
 			// eg rca2020-04-25
+
+			let rkey = "count";
+			let rresult = (await redis.get(rkey)) | "0";
+			rresult = (parseInt(rresult) + 1) + "";
+			await redis.set(rkey, rresult);
+
 			let key = 'rca' + getCurrentTime();
 			let result = await redis.get(key);
 
@@ -160,7 +167,7 @@ module.exports = [
 					records[i.updateTime] = {};
 				}
 
-				records[i.updateTime][i.province] = {
+				records[i.updateTime][province_en2chi[i.province]] = {
 					confirmed: i.confirmed,
 					deaths: i.deaths,
 					recovered: i.recovered
@@ -277,5 +284,21 @@ module.exports = [
 				ctx.rest(rumors);
 			}
 		}
+	},{
+		method: 'GET',
+		path: '/api/soa/count',
+		func: async (ctx, next) => {
+
+			let key = "count";
+			let result = (await redis.get(key)) | "0";
+
+			result = parseInt(result);
+			result = {"count": parseInt(result)}
+
+			ctx.rest(result);
+		}
 	}
 ];
+
+
+module.exports = methods;
