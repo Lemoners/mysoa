@@ -27,7 +27,7 @@ module.exports = {
     "Shanxi":"山西",
     "Sichuan":"四川",
     "Tianjin":"天津",
-    "Tibet":"台北",
+    "Tibet":"西藏",
     "Xinjiang":"新疆",
     "Yunnan":"云南",
     "Zhejiang":"浙江"
