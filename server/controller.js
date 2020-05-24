@@ -1,7 +1,7 @@
 const fs = require('fs');
 
 function addMapping(router, mapping) {
-    console.log("mapping", mapping);
+    // console.log("mapping", mapping);
     for (var cont of mapping) {
         switch(cont.method) {
             case 'GET':

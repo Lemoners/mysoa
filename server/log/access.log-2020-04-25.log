@@ -1,0 +1,2 @@
+[2020-04-25T14:47:06.771] [INFO] access - ::1 - - "GET /api/record/country/all HTTP/1.1" 200 863029 "" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/81.0.4044.122 Safari/537.36"
+[2020-04-25T14:47:09.290] [INFO] access - ::1 - - "GET /favicon.ico HTTP/1.1" 200 4286 "http://localhost:8889/api/record/country/all" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/81.0.4044.122 Safari/537.36"
