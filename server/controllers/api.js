@@ -242,7 +242,7 @@ let methods = [
 				// let parse_end_time = new Date().getTime();
 				// console.log("Parse spend ", (parse_end_time - parse_time) / 1000, "s");
 			} else {
-				let t_news = await sequelize.query('select pubDate, sourceUrl, title from `News` order by pubDate');
+				let t_news = await sequelize.query('select pubDate, id from `News` order by pubDate');
 		
 				for (var i of t_news[0]) {
 					let p_date = getLocalTime(i.pubDate);
@@ -250,8 +250,7 @@ let methods = [
 						news[p_date] = [];
 					}
 					news[p_date].push({
-						sourceUrl: i.sourceUrl,
-						title: i.title,
+						id: i.id,
 					});
 				}
 				result = JSON.stringify(news);
@@ -269,6 +268,22 @@ let methods = [
 			let end_time = new Date().getTime();
 
 			// console.log("news spend ", (end_time - start_time) / 1000, "s");
+		}
+	},{
+		method: 'GET',
+		path: '/api/news/find/:id',
+		func: async (ctx, next) => {
+			let id = ctx.params.id | 'NA';
+			let news = await model.News.findAll({
+				where: {
+					id: id
+				}
+			});
+			if (Object.getOwnPropertyNames(news) == 0) {
+				throw new APIError("Request newsID not found");
+			} else {
+				ctx.rest(news);
+			}
 		}
 	},{
 		method: 'GET',

@@ -231,7 +231,7 @@ var initrecord = async () => {
 };
 
 
-test_init_redis = async () => {
+var vtest_init_redis = async () => {
 	let k = "test";
 	let v = "hh";
 	let res = await redis.set(k,v);
@@ -244,17 +244,116 @@ test_init_redis = async () => {
 };
 
 
+
+var expired_redis = async () => {
+	gt = () => {
+		let date = (new Date().toLocaleDateString().split('/').reverse());
+
+		for (let i in date) {
+			if (date[i].length == 1) {
+				date[i] = "0" + date[i];
+			}
+		}
+		return (date[0] + '-' + date[2] + '-' + date[1]);
+	}
+	let keys = ['rl'+gt(), 'rca'+gt(), 'na'+gt()];
+
+	for (let i of keys) {
+		await redis.del(i);
+	} 
+};
+
+
+var init_recovery = async () => {
+	console.log("Loading data form NN");
+	let data = await axios.get('http://123.56.229.91:8080/data/global');
+	data = data.data;
+
+	for (let i in data) {
+		let time = data[i].time.split('-');
+		time = time[2] + "-" + time[0] + '-' + time[1];
+		data[i].time = time;
+	}
+	console.log("Updating");
+
+	for (let i in data) {
+		let today = data[i].data;
+		for (let country in today) {
+
+			let t_country = country;
+
+			if(!(country in countries)) {
+				if (country in hp2countries) {
+					t_country = hp2countries[country];
+				} else {
+					continue;
+				}
+			}
+			// console.log(t_country);
+			if ('recovered' in today[country]) {
+				let rc = await model.Record.findAll({
+					where: {
+						country: t_country,
+						province: "",
+						updateTime: data[i].time
+					}
+				});
+				if (rc.length != 0) {
+					rc = rc[0];
+					let num = (today[country].recovered | 0);
+					// console.log(num);
+					rc.recovered = num;
+					await rc.save();
+				}
+			} else {
+				let all = 0;
+				for (let province in today[country]) {
+					all += today[country][province].recovered | 0;
+					let rc = await model.Record.findAll({
+						where: {
+							country: t_country,
+							province: province,
+							updateTime: data[i].time
+						}
+					});
+					if (rc.length != 0) {
+						rc = rc[0];
+						rc.recovered = today[country].recovered | 0;
+						await rc.save();
+					}
+				}
+
+				let rc = await model.Record.findAll({
+						where: {
+							country: t_country,
+							province: "",
+							updateTime: data[i].time
+						}
+					});
+				if (rc.length != 0) {
+						rc = rc[0];
+						rc.recovered = all;
+						await rc.save();
+				}
+			}
+		}
+	}
+
+};
+
+
 (async ()=>{
     model.loadModels();
     // init table
     await model.sync();
 
-    await initrumors();
-    await initnews();
-    await initrecord();
-	await initbaidu();
-	
-	// await test_init_redis();
+    // await initrumors();
+    // await initnews();
+    // await initrecord();
+	// await initbaidu();
+	// await expired_redis();
+
+	await init_recovery();
 
 })().then((res) => {
 	console.log("ok");
