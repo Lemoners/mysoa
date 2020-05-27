@@ -7,14 +7,15 @@ const province_en2chi = require('../assets/province_eng2chi.js');
 
 
 function getLocalTime(nS) {
-    let date =  (new Date(parseInt(nS)).toLocaleString().split(',')[0].split('/').reverse());
+    let d=  new Date(parseInt(nS))
+    let date = [d.getFullYear(),d.getMonth()+1, d.getDate()]
+
 	for (let i in date) {
-		if (date[i].length == 1) {
+		if (date[i]<10) {
 			date[i] = "0" + date[i];
 		}
 	}
-	// note ! toLocalString的返回值前面是　月、日、年
-	return (date[0] + '-' + date[2] + '-' + date[1]);
+	return (date[0] + '-' + date[1] + '-' + date[2]);
 }
 
 function getCurrentTime() {
