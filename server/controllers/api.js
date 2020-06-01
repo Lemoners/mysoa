@@ -242,7 +242,7 @@ let methods = [
 				// let parse_end_time = new Date().getTime();
 				// console.log("Parse spend ", (parse_end_time - parse_time) / 1000, "s");
 			} else {
-				let t_news = await sequelize.query('select pubDate, id from `News` order by pubDate');
+				let t_news = await sequelize.query('select id, title, pubDate from `News` order by pubDate');
 		
 				for (var i of t_news[0]) {
 					let p_date = getLocalTime(i.pubDate);
@@ -251,6 +251,7 @@ let methods = [
 					}
 					news[p_date].push({
 						id: i.id,
+						title: i.title
 					});
 				}
 				result = JSON.stringify(news);
