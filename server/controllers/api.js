@@ -130,7 +130,7 @@ let methods = [
 			if (result) {
 				records = JSON.parse(result);
 			} else {
-				let coun_records = await sequelize.query('select country, updateTime ,sum(confirmed) as confirmed, sum(deaths) as deaths, sum(recovered) as recovered from `Record` group by country, updateTime order by updateTime, country;')
+				let coun_records = await sequelize.query('select country, updateTime ,sum(confirmed) as confirmed, sum(deaths) as deaths, sum(recovered) as recovered from `Record` where country != "United States" group by country, updateTime order by updateTime, country;')
 
 				for (var i of coun_records[0]) {
 					if (!(i.updateTime in records)) {
@@ -138,6 +138,33 @@ let methods = [
 					}
 
 					records[i.updateTime][i.country] = {
+						confirmed: i.confirmed,
+						deaths: i.deaths,
+						recovered: i.recovered
+					};
+				}
+
+				let us_records = await sequelize.query('select country, province, updateTime, confirmed, deaths, recovered from `Record` where country="United States" and province="" order by updateTime');
+				for (var i of coun_records[0]) {
+					if (!(i.updateTime in records)) {
+						records[i.updateTime] = {};
+					}
+
+					records[i.updateTime][i.country] = {
+						confirmed: i.confirmed,
+						deaths: i.deaths,
+						recovered: i.recovered
+					};
+				}
+
+				let green_records = await sequelize.query('select country, province, updateTime, confirmed, deaths, recovered from `Record` where province="Greenland" order by updateTime');
+
+				for (let i of green_records[0]) {
+					if (!(i.updateTime in records)) {
+						records[i.updateTime] = {};
+					}
+
+					records[i.updateTime][i.province] = {
 						confirmed: i.confirmed,
 						deaths: i.deaths,
 						recovered: i.recovered

@@ -5,8 +5,9 @@ const generateId = (name) => {
 const fs = require('mz/fs');
 const axios = require('axios');
 const countries = require('../assets/countries').countries;
-const hp2countries = require('../assets/hp_contries2countries').hp_country2country;
+const hp2countries = require('../assets/hp_contries2countries');
 const redis = require('./db.js').redis;
+const CSV = require('comma-separated-values');
 
 
 var initbaidu = async () => {
@@ -246,21 +247,23 @@ var vtest_init_redis = async () => {
 
 
 var expired_redis = async () => {
-	gt = () => {
-		let date = (new Date().toLocaleDateString().split('/').reverse());
+	// gt = () => {
+	// 	let date = (new Date().toLocaleDateString().split('/').reverse());
 
-		for (let i in date) {
-			if (date[i].length == 1) {
-				date[i] = "0" + date[i];
-			}
-		}
-		return (date[0] + '-' + date[2] + '-' + date[1]);
-	}
-	let keys = ['rl'+gt(), 'rca'+gt(), 'na'+gt()];
+	// 	for (let i in date) {
+	// 		if (date[i].length == 1) {
+	// 			date[i] = "0" + date[i];
+	// 		}
+	// 	}
+	// 	return (date[0] + '-' + date[2] + '-' + date[1]);
+	// }
+	// let keys = ['rl'+gt(), 'rca'+gt(), 'na'+gt()];
 
-	for (let i of keys) {
-		await redis.del(i);
-	} 
+	// for (let i of keys) {
+	// 	await redis.del(i);
+	// }
+	
+	redis.flushdb();
 };
 
 
@@ -341,6 +344,272 @@ var init_recovery = async () => {
 
 };
 
+var init_us = async () => {
+	let confirmed = await fs.readFile(__dirname + '/data/csv/US_confirmed.csv'), death = await fs.readFile(__dirname + '/data/csv/US_death.csv');
+
+	confirmed = CSV.parse(confirmed.toString());
+	death = CSV.parse(death.toString());
+
+	data = {};
+
+	index2date = {};
+	
+	for (let i = 11; i < confirmed[0].length; i++) {
+		let date = confirmed[0][i];
+		date = date.split('/');
+		if (date[1].length == 1) {
+			date = '20' + date[2] + '-0' + date[0] + '-0' + date[1];
+		} else {
+			date = '20' + date[2] + '-0' + date[0] + '-' + date[1];
+		}
+		data[date] = {};
+		index2date[i] = date;
+	}
+
+	// console.log(Object.getOwnPropertyNames(index2date).length);
+
+	for (let i = 1; i < confirmed.length; i++) {
+		let state = confirmed[i][6];
+		for (let j = 11; j < confirmed[i].length; j++) {
+			if (state in data[index2date[j]]) {
+				data[index2date[j]][state].confirmed += parseInt(confirmed[i][j]);
+			} else {
+				data[index2date[j]][state]= {
+					confirmed: parseInt(confirmed[i][j]),
+					deaths: 0,
+					recovered: 0
+				};
+			}
+		}
+	}
+
+	for (let i = 1; i < death.length; i++) {
+		let state = death[i][6];
+		for (let j = 12; j < Object.getOwnPropertyNames(index2date).length; j++) {
+			if (state in data[index2date[j]]) {
+				data[index2date[j]][state].deaths += parseInt(death[i][j]);
+			}
+		}
+	}
+
+	for (let d in data) {
+		for (let p in data[d]) {
+			let conf = data[d][p].confirmed,
+			dea = data[d][p].deaths,
+			rec = data[d][p].recovered,
+			id = generateId("United States" + p + d);
+			await model.Record
+				.findOrCreate({
+					where: {
+						id: id
+					},
+					defaults: {
+						id: id,
+						country: "United States",
+						province: p,
+						updateTime: d,
+						confirmed: conf,
+						deaths: dea,
+						recovered: rec
+					}
+				})
+				.spread((record, created) => {
+					if (created === false) {
+						record.update({
+							country: "United States",
+							province: p,
+							updateTime: d,
+							confirmed: conf,
+							deaths: dea,
+							recovered: rec
+						});
+					}
+				});
+		}
+	}
+};
+
+
+var init_csv = async () => {
+	let confirmed = await fs.readFile(__dirname + '/data/csv/confirmed.csv'), recovered = await fs.readFile(__dirname + '/data/csv/recovered.csv'),
+	death = await fs.readFile(__dirname + '/data/csv/death.csv');
+
+	confirmed = CSV.parse(confirmed.toString());
+	recovered = CSV.parse(recovered.toString());
+	death = CSV.parse(death.toString());
+
+	// for (let i = 1; i < recovered.length; i++) {
+	// 	let province = recovered[i][0];
+	// 	let country = recovered[i][1];
+	// 	if (country == "Canada") {
+	// 		console.log(province);
+	// 	}
+	// }
+	// return
+
+	for (let i = 1; i < recovered.length; i++) {
+		let province = recovered[i][0];
+		let country = recovered[i][1];
+		
+		if (!(country in countries)) {
+			if (country in hp2countries) {
+				country = hp2countries[country];
+			} else {
+				continue;
+			}
+		}
+
+		for (let j = 4; j < recovered[0].length; j++) {
+			let date = recovered[0][j];
+			date = date.split('/');
+			if (date[1].length == 1) {
+				date = '20' + date[2] + '-0' + date[0] + '-0' + date[1];
+			} else {
+				date = '20' + date[2] + '-0' + date[0] + '-' + date[1];
+			}
+			
+
+			let rec = recovered[i][j] | 0,
+				id = generateId(country + province + date);
+
+			var test_rec = await model.Record
+				.findOrCreate({
+					where: {
+						id: id
+					},
+					defaults: {
+						id: id,
+						country: country,
+						province: province,
+						updateTime: date,
+						confirmed: 0,
+						deaths: 0,
+						recovered: rec
+					}
+				})
+				.spread((record, created) => {
+					if (created === false) {
+						record.update({
+							country: country,
+							province: province,
+							updateTime: date,
+							recovered: rec
+						});
+					}
+				});
+		}
+	}
+	console.log("Finish recovered");
+	for (let i = 1; i < confirmed.length; i++) {
+		let province = confirmed[i][0];
+		let country = confirmed[i][1];
+		
+		if (!(country in countries)) {
+			if (country in hp2countries) {
+				country = hp2countries[country];
+			} else {
+				continue;
+			}
+		}
+
+		for (let j = 4; j < confirmed[0].length; j++) {
+			let date = confirmed[0][j];
+			date = date.split('/');
+			if (date[1].length == 1) {
+				date = '20' + date[2] + '-0' + date[0] + '-0' + date[1];
+			} else {
+				date = '20' + date[2] + '-0' + date[0] + '-' + date[1];
+			}
+			
+
+			let conf = confirmed[i][j] | 0,
+				id = generateId(country + province + date);
+
+			var test_rec = await model.Record
+				.findOrCreate({
+					where: {
+						id: id
+					},
+					defaults: {
+						id: id,
+						country: country,
+						province: province,
+						updateTime: date,
+						confirmed: conf,
+						deaths: 0,
+						recovered: 0
+					}
+				})
+				.spread((record, created) => {
+					if (created === false) {
+						record.update({
+							country: country,
+							province: province,
+							updateTime: date,
+							confirmed: conf,
+						});
+					}
+				});
+		}
+
+
+	}
+	console.log("Finish confirmed");
+	for (let i = 1; i < death.length; i++) {
+		let province = death[i][0];
+		let country = death[i][1];
+		
+		if (!(country in countries)) {
+			if (country in hp2countries) {
+				country = hp2countries[country];
+			} else {
+				continue;
+			}
+		}
+		for (let j = 4; j < death[0].length; j++) {
+			let date = death[0][j];
+			date = date.split('/');
+			if (date[1].length == 1) {
+				date = '20' + date[2] + '-0' + date[0] + '-0' + date[1];
+			} else {
+				date = '20' + date[2] + '-0' + date[0] + '-' + date[1];
+			}
+			
+
+			let dea = death[i][j] | 0,
+				id = generateId(country + province + date);
+
+			var test_rec = await model.Record
+				.findOrCreate({
+					where: {
+						id: id
+					},
+					defaults: {
+						id: id,
+						country: country,
+						province: province,
+						updateTime: date,
+						confirmed: 0,
+						deaths: dea,
+						recovered: 0
+					}
+				})
+				.spread((record, created) => {
+					if (created === false) {
+						record.update({
+							country: country,
+							province: province,
+							updateTime: date,
+							deaths: dea,
+						});
+					}
+				});
+		}
+	}
+	console.log("Finish death");
+	console.log("init records ok");
+};
+
 
 (async ()=>{
     model.loadModels();
@@ -350,13 +619,20 @@ var init_recovery = async () => {
     // await initrumors();
     // await initnews();
     // await initrecord();
-	// await initbaidu();
-	// await expired_redis();
+	
+	// await init_csv();
+	await init_us();
 
-	await init_recovery();
+	// await initbaidu();
+	await expired_redis();
+
+	//data from niuniu
+	// await init_recovery();
 
 })().then((res) => {
 	console.log("ok");
+	process.exit(0);
 }).catch((err) => {
 	console.log("fail", err);
+	process.exit(-1);
 })

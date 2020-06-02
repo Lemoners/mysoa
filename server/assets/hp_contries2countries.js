@@ -1,6 +1,6 @@
 // note modified so LJF could use directly
 
-module.exports.hp_country2country = {
+module.exports = {
     "Bosnia and Herzegovina": "Bosnia and Herz.",
     "Congo (Brazzaville)": "Congo",
     "Congo (Kinshasa)": "Dem. Rep. Congo",
