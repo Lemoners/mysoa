@@ -145,7 +145,7 @@ let methods = [
 				}
 
 				let us_records = await sequelize.query('select country, province, updateTime, confirmed, deaths, recovered from `Record` where country="United States" and province="" order by updateTime');
-				for (var i of coun_records[0]) {
+				for (var i of us_records[0]) {
 					if (!(i.updateTime in records)) {
 						records[i.updateTime] = {};
 					}
@@ -158,7 +158,8 @@ let methods = [
 				}
 
 				let green_records = await sequelize.query('select country, province, updateTime, confirmed, deaths, recovered from `Record` where province="Greenland" order by updateTime');
-
+				
+				// console.log(green_records);
 				for (let i of green_records[0]) {
 					if (!(i.updateTime in records)) {
 						records[i.updateTime] = {};
@@ -185,22 +186,40 @@ let methods = [
 		}
 	},{
 		method: 'GET',
-		path: '/api/record/province/all',
+		path: '/api/record/province/:country',
 		func: async (ctx, next) => {
+			let country = ctx.params.country || 'NONE';
 			let records = {};
-			let pro_records = await sequelize.query('select province, updateTime, confirmed, deaths, recovered from `Record` where province!="" and country="China" order by updateTime, province');
+			if (country == "China") {
+				let pro_records = await sequelize.query('select province, updateTime, confirmed, deaths, recovered from `Record` where province!="" and country="China" order by updateTime, province');
 
-			for (var i of pro_records[0]) {
-				if (!(i.updateTime in records)) {
-					records[i.updateTime] = {};
+				for (var i of pro_records[0]) {
+					if (!(i.updateTime in records)) {
+						records[i.updateTime] = {};
+					}
+
+					records[i.updateTime][province_en2chi[i.province]] = {
+						confirmed: i.confirmed,
+						deaths: i.deaths,
+						recovered: i.recovered
+					};
 				}
+			} else {
+				let pro_records = await sequelize.query(`select province, updateTime, confirmed, deaths, recovered from Record where province!="" and country="${country}" order by updateTime, province`);
 
-				records[i.updateTime][province_en2chi[i.province]] = {
-					confirmed: i.confirmed,
-					deaths: i.deaths,
-					recovered: i.recovered
-				};
+				for (var i of pro_records[0]) {
+					if (!(i.updateTime in records)) {
+						records[i.updateTime] = {};
+					}
+
+					records[i.updateTime][i.province] = {
+						confirmed: i.confirmed,
+						deaths: i.deaths,
+						recovered: i.recovered
+					};
+				}
 			}
+			
 
 			if (Object.getOwnPropertyNames(records).length === 0) {
 				throw new APIError('404', 'Requested province not found');
