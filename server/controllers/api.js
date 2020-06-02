@@ -360,7 +360,32 @@ let methods = [
 
 			ctx.rest(result);
 		}
-	}
+	},{
+		method: 'GET',
+		path: '/api/update',
+		func: async (ctx, next) => {
+
+			let key = "update";
+			gt = () => {
+				let date = (new Date().toLocaleDateString().split('/').reverse());
+
+				console.log(date);
+
+				for (let i in date) {
+					if (date[i].length == 1) {
+						date[i] = "0" + date[i];
+					}
+				}
+				return (date[0] + '-' + date[2] + '-' + date[1]);
+			};
+			
+			let result = (await redis.get(key));
+
+			result = {"update": result}
+
+			ctx.rest(result);
+		}
+	},
 ];
 
 

@@ -244,6 +244,21 @@ var vtest_init_redis = async () => {
 	console.log(`get with ${get}`);
 };
 
+var update_time = async () => {
+	let k = "update";
+	gt = () => {
+				let date = (new Date().toLocaleDateString().split('/').reverse());
+
+				for (let i in date) {
+					if (date[i].length == 1) {
+						date[i] = "0" + date[i];
+					}
+				}
+				return (date[0] + '-' + date[2] + '-' + date[1]);
+			};
+
+	await redis.set(k, gt());
+}
 
 
 var expired_redis = async () => {
@@ -366,7 +381,6 @@ var init_us = async () => {
 		index2date[i] = date;
 	}
 
-	// console.log(Object.getOwnPropertyNames(index2date).length);
 
 	for (let i = 1; i < confirmed.length; i++) {
 		let state = confirmed[i][6];
@@ -385,9 +399,9 @@ var init_us = async () => {
 
 	for (let i = 1; i < death.length; i++) {
 		let state = death[i][6];
-		for (let j = 12; j < Object.getOwnPropertyNames(index2date).length; j++) {
+		for (let j = 11; j < 11 + Object.getOwnPropertyNames(index2date).length; j++) {
 			if (state in data[index2date[j]]) {
-				data[index2date[j]][state].deaths += parseInt(death[i][j]);
+				data[index2date[j]][state].deaths += parseInt(death[i][j+1]);
 			}
 		}
 	}
@@ -621,10 +635,13 @@ var init_csv = async () => {
     // await initrecord();
 	
 	// await init_csv();
-	await init_us();
+	// await init_us();
 
 	// await initbaidu();
-	await expired_redis();
+	// await expired_redis();
+
+
+	await update_time();
 
 	//data from niuniu
 	// await init_recovery();
